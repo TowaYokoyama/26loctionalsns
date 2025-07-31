@@ -4,8 +4,8 @@ import hello from '@functions/hello';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
-  frameworkVersion: '3',
-  plugins: ['serverless-esbuild',
+  frameworkVersion: '4',
+  plugins: [
       'serverless-offline',
   ],
   provider: {
@@ -23,18 +23,7 @@ const serverlessConfiguration: AWS = {
   // import the function via paths
   functions: { hello },
   package: { individually: true },
-  custom: {
-    esbuild: {
-      bundle: true,
-      minify: false,
-      sourcemap: true,
-      exclude: ['aws-sdk'],
-      target: 'node14',
-      define: { 'require.resolve': undefined },
-      platform: 'node',
-      concurrency: 10,
-    },
-  },
+ 
 };
 
 module.exports = serverlessConfiguration;
