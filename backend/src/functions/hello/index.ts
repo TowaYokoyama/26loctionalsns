@@ -1,8 +1,7 @@
 import schema from './schema';
-import { handlerPath } from '@libs/handler-resolver';
 
 export default {
-  handler: `${handlerPath(__dirname)}/handler.main`,
+    handler: `${__dirname.split(process.cwd())[1].substring(1)}/handler.main`,
   events: [
     {
       http: {
