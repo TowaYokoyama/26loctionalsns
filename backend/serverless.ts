@@ -2,73 +2,76 @@ import type { AWS } from '@serverless/typescript';
 
 // 作成した関数をインポート
 import hello from '@functions/hello';
-import crreatePost from '@functions/crreatePost';
+import createPost from '@functions/createPost';
+import getUploadUrl from '@functions/getUploadUrl';
 
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
   frameworkVersion: '4',
-  plugins: [
-    'serverless-offline',
-    'serverless-dynamodb-local', // 追加
-  ],
+  plugins: ['serverless-offline', 'serverless-dynamodb-local'],
   provider: {
     name: 'aws',
-    runtime: 'nodejs18.x', // Node.jsのバージョンを更新
-     region: 'ap-northeast-1', // 東京リージョンを追加
-    // ↓↓↓ Lambda関数がDynamoDBを操作する権限を追加
+    runtime: 'nodejs18.x',
+    region: 'ap-northeast-1',
     iam: {
       role: {
         statements: [
-          {
+          { // DynamoDBへの権限
             Effect: 'Allow',
-            Action: [
-              'dynamodb:PutItem',
-              'dynamodb:GetItem',
-              'dynamodb:Query',
-            ],
-            Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:${aws:accountId}:table/${self:provider.environment.POSTS_TABLE_NAME}',
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query'],
+            Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.POSTS_TABLE_NAME}',
+          },
+          { // S3への権限を追加
+            Effect: 'Allow',
+            Action: ['s3:PutObject'],
+            Resource: 'arn:aws:s3::*:${self:provider.environment.POSTS_S3_BUCKET}/*',
           },
         ],
       },
     },
-    // ↓↓↓ 環境変数を追加
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       POSTS_TABLE_NAME: '${self:service}-posts-${sls:stage}',
+      POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}', // S3バケット名を追加
     },
   },
-  functions: { 
+  functions: {
     hello,
-    crreatePost, // 作成した関数を登録
+    createPost,
+    getUploadUrl, // 新しい関数を登録
   },
   package: { individually: true },
-  // ↓↓↓ ローカルDBの設定を追加
   custom: {
     dynamodb: {
-      start: {
-        port: 8000,
-        inMemory: true,
-        migrate: true,
-      },
+      start: { port: 8000, inMemory: true, migrate: true },
       stages: 'dev',
     },
   },
-  // ↓↓↓ データベース（テーブル）の定義を追加
   resources: {
     Resources: {
-      PostsTable: {
+      PostsTable: { // DynamoDBテーブル
         Type: 'AWS::DynamoDB::Table',
         Properties: {
           TableName: '${self:provider.environment.POSTS_TABLE_NAME}',
-          AttributeDefinitions: [
-            { AttributeName: 'postId', AttributeType: 'S' },
-          ],
-          KeySchema: [
-            { AttributeName: 'postId', KeyType: 'HASH' },
-          ],
+          AttributeDefinitions: [{ AttributeName: 'postId', AttributeType: 'S' }],
+          KeySchema: [{ AttributeName: 'postId', KeyType: 'HASH' }],
           BillingMode: 'PAY_PER_REQUEST',
+        },
+      },
+      PostsS3Bucket: { // S3バケットを追加
+        Type: 'AWS::S3::Bucket',
+        Properties: {
+          BucketName: '${self:provider.environment.POSTS_S3_BUCKET}',
+          CorsConfiguration: {
+            CorsRules: [{
+              AllowedOrigins: ['*'],
+              AllowedHeaders: ['*'],
+              AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+              MaxAge: 3000,
+            }],
+          },
         },
       },
     },
