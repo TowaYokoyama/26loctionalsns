@@ -19,7 +19,7 @@ const serverlessConfiguration: AWS = {
         statements: [
           { // DynamoDBへの権限
             Effect: 'Allow',
-            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query'],
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query','dynamodb:Scan'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.POSTS_TABLE_NAME}',
           },
           { // S3への権限を追加
@@ -40,7 +40,8 @@ const serverlessConfiguration: AWS = {
   functions: {
     hello,
     createPost,
-    getUploadUrl, // 新しい関数を登録
+    getUploadUrl,
+    getPosts,
   },
   package: { individually: true },
   custom: {

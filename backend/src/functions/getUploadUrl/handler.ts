@@ -2,7 +2,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
-const client = new S3Client({});
+const client = new S3Client({ region: process.env.AWS_REGION });
 
 export const main = async () => {
   const imageName = randomUUID(); // 画像ごとにユニークな名前を生成
