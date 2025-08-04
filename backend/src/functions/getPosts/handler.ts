@@ -10,7 +10,7 @@ export const main = async () => {
   });
 
   const result = await docClient.send(command);
-  const posts = result.Items;
+  const posts = result.Items || [];
 
   // 画像の完全なURLを生成してフロントエンドに返す
   const bucketName = process.env.POSTS_S3_BUCKET;

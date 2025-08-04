@@ -4,7 +4,7 @@ import type { AWS } from '@serverless/typescript';
 import hello from '@functions/hello';
 import createPost from '@functions/createPost';
 import getUploadUrl from '@functions/getUploadUrl';
-
+import getPosts from '@functions/getPosts';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
@@ -14,6 +14,7 @@ const serverlessConfiguration: AWS = {
     name: 'aws',
     runtime: 'nodejs18.x',
     region: 'ap-northeast-1',
+    timeout:30,
     iam: {
       role: {
         statements: [

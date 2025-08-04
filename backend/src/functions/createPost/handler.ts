@@ -21,6 +21,7 @@ export const main = async (event: ApiGatewayEvent) => {
       caption: data.caption, // 送信されたキャプション
       imageName: data.imageName,
       createdAt: new Date().toISOString(),
+      location : data.location,
     },
   });
 
