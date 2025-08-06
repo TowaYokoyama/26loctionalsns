@@ -5,6 +5,8 @@ import hello from '@functions/hello';
 import createPost from '@functions/createPost';
 import getUploadUrl from '@functions/getUploadUrl';
 import getPosts from '@functions/getPosts';
+import deletePost from '@functions/deletePost';
+import likePost from '@functions/likePost';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
@@ -20,12 +22,12 @@ const serverlessConfiguration: AWS = {
         statements: [
           { // DynamoDBへの権限
             Effect: 'Allow',
-            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query','dynamodb:Scan'],
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query','dynamodb:Scan', 'dynamodb:DeleteItem','dynamodb:UpdateItem',],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.POSTS_TABLE_NAME}',
           },
           { // S3への権限を追加
             Effect: 'Allow',
-            Action: ['s3:PutObject'],
+            Action: ['s3:PutObject','s3:DeleteObject'],
             Resource: 'arn:aws:s3::*:${self:provider.environment.POSTS_S3_BUCKET}/*',
           },
         ],
@@ -43,6 +45,8 @@ const serverlessConfiguration: AWS = {
     createPost,
     getUploadUrl,
     getPosts,
+    deletePost,
+    likePost,
   },
   package: { individually: true },
   custom: {

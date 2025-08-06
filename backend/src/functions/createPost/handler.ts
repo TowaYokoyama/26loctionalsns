@@ -19,7 +19,7 @@ export const main = async (event: ApiGatewayEvent) => {
     Item: {
       postId: randomUUID(), // 投稿IDを自動生成
       caption: data.caption, // 送信されたキャプション
-      imageName: data.imageName,
+      imageNames: data.imageNames,
       createdAt: new Date().toISOString(),
       location : data.location,
     },

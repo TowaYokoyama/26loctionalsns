@@ -10,17 +10,24 @@ export const main = async () => {
   });
 
   const result = await docClient.send(command);
-  const posts = result.Items || [];
+  const posts: Record<string, any>[] = result.Items || [];
 
   // 画像の完全なURLを生成してフロントエンドに返す
   const bucketName = process.env.POSTS_S3_BUCKET;
   const region = process.env.AWS_REGION;
+ const postsWithImageUrls = posts.map(post => {
+    // imageNamesが存在し、配列であることを確認
+    const imageUrls = (post.imageNames && Array.isArray(post.imageNames))
+      ? post.imageNames.map(imageName => // ここで定義した 'imageName' を...
+          `https://${bucketName}.s3.${region}.amazonaws.com/${imageName}` // ...ここで正しく使う
+        )
+      : []; // もしなければ空の配列を返す
 
-  const postsWithImageUrls = posts.map(post => ({
+    return {
       ...post,
-      // S3の画像URLを組み立てる
-      imageUrl: `https://${bucketName}.s3.${region}.amazonaws.com/${post.imageName}`
-  }));
+      imageUrls: imageUrls, // プロパティ名を imageUrls (複数形) に変更
+    };
+  });
 
   return {
     statusCode: 200,
