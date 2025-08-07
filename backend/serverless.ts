@@ -1,12 +1,12 @@
 import type { AWS } from '@serverless/typescript';
 
-// 作成した関数をインポート
 import hello from '@functions/hello';
-import createPost from '@functions/createPost';
+
 import getUploadUrl from '@functions/getUploadUrl';
 import getPosts from '@functions/getPosts';
 import deletePost from '@functions/deletePost';
 import likePost from '@functions/likePost';
+import createPost from '@functions/createPost';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
@@ -16,19 +16,19 @@ const serverlessConfiguration: AWS = {
     name: 'aws',
     runtime: 'nodejs18.x',
     region: 'ap-northeast-1',
-    timeout:30,
+    timeout: 30,
     iam: {
       role: {
         statements: [
-          { // DynamoDBへの権限
+          {
             Effect: 'Allow',
-            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query','dynamodb:Scan', 'dynamodb:DeleteItem','dynamodb:UpdateItem',],
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:DeleteItem', 'dynamodb:UpdateItem'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.POSTS_TABLE_NAME}',
           },
-          { // S3への権限を追加
+          {
             Effect: 'Allow',
-            Action: ['s3:PutObject','s3:DeleteObject'],
-            Resource: 'arn:aws:s3::*:${self:provider.environment.POSTS_S3_BUCKET}/*',
+            Action: ['s3:PutObject', 's3:DeleteObject'],
+            Resource: 'arn:aws:s3:::${self:provider.environment.POSTS_S3_BUCKET}/*',
           },
         ],
       },
@@ -37,7 +37,7 @@ const serverlessConfiguration: AWS = {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       POSTS_TABLE_NAME: '${self:service}-posts-${sls:stage}',
-      POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}', // S3バケット名を追加
+      POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}',
     },
   },
   functions: {
@@ -55,9 +55,11 @@ const serverlessConfiguration: AWS = {
       stages: 'dev',
     },
   },
+  // vvvvvvvvvv ここから下が修正箇所 vvvvvvvvvv
   resources: {
     Resources: {
-      PostsTable: { // DynamoDBテーブル
+      // DynamoDBテーブル
+      PostsTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
           TableName: '${self:provider.environment.POSTS_TABLE_NAME}',
@@ -66,10 +68,17 @@ const serverlessConfiguration: AWS = {
           BillingMode: 'PAY_PER_REQUEST',
         },
       },
-      PostsS3Bucket: { // S3バケットを追加
+      // S3バケット本体
+      PostsS3Bucket: {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.POSTS_S3_BUCKET}',
+          PublicAccessBlockConfiguration: {
+            BlockPublicAcls: false,
+            BlockPublicPolicy: false,
+            IgnorePublicAcls: false,
+            RestrictPublicBuckets: false,
+          },
           CorsConfiguration: {
             CorsRules: [{
               AllowedOrigins: ['*'],
@@ -80,8 +89,26 @@ const serverlessConfiguration: AWS = {
           },
         },
       },
+      // S3バケットの公開ポリシー（ルール）
+      PostsS3BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        Properties: {
+          Bucket: { Ref: 'PostsS3Bucket' },
+          PolicyDocument: {
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: '*',
+                Action: ['s3:GetObject'],
+                Resource: 'arn:aws:s3:::${self:provider.environment.POSTS_S3_BUCKET}/*',
+              },
+            ],
+          },
+        },
+      },
     },
   },
+  // ^^^^^^^^^^ ここまでが修正箇所 ^^^^^^^^^^
 };
 
 module.exports = serverlessConfiguration;
