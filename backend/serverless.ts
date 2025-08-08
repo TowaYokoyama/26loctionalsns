@@ -1,17 +1,22 @@
 import type { AWS } from '@serverless/typescript';
 
+// 作成した関数をインポート
 import hello from '@functions/hello';
-
+import createPost from '@functions/createPost';
 import getUploadUrl from '@functions/getUploadUrl';
 import getPosts from '@functions/getPosts';
 import deletePost from '@functions/deletePost';
 import likePost from '@functions/likePost';
-import createPost from '@functions/createPost';
+import createComment from '@functions/createComment';
+import getComments from '@functions/getComments';
+import deleteComment from '@functions/deleteComment';
+
+// コメント用の関数をインポート
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
   frameworkVersion: '4',
-  plugins: ['serverless-offline', 'serverless-dynamodb-local'],
+  plugins: ['serverless-offline'],
   provider: {
     name: 'aws',
     runtime: 'nodejs18.x',
@@ -20,15 +25,20 @@ const serverlessConfiguration: AWS = {
     iam: {
       role: {
         statements: [
-          {
+          { // Postsテーブルへの権限
             Effect: 'Allow',
             Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:DeleteItem', 'dynamodb:UpdateItem'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.POSTS_TABLE_NAME}',
           },
-          {
+          { // S3バケットへの権限
             Effect: 'Allow',
             Action: ['s3:PutObject', 's3:DeleteObject'],
             Resource: 'arn:aws:s3:::${self:provider.environment.POSTS_S3_BUCKET}/*',
+          },
+          { // Commentsテーブルへの権限
+            Effect: 'Allow',
+            Action: ['dynamodb:PutItem', 'dynamodb:Query',  'dynamodb:DeleteItem'],
+            Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.COMMENTS_TABLE_NAME}',
           },
         ],
       },
@@ -38,6 +48,7 @@ const serverlessConfiguration: AWS = {
       NODE_OPTIONS: '--enable-source-maps --stack-trace-limit=1000',
       POSTS_TABLE_NAME: '${self:service}-posts-${sls:stage}',
       POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}',
+      COMMENTS_TABLE_NAME: '${self:service}-comments-${sls:stage}',
     },
   },
   functions: {
@@ -47,24 +58,36 @@ const serverlessConfiguration: AWS = {
     getPosts,
     deletePost,
     likePost,
+    createComment,
+    getComments, 
+    deleteComment,
   },
   package: { individually: true },
-  custom: {
-    dynamodb: {
-      start: { port: 8000, inMemory: true, migrate: true },
-      stages: 'dev',
-    },
-  },
-  // vvvvvvvvvv ここから下が修正箇所 vvvvvvvvvv
   resources: {
     Resources: {
-      // DynamoDBテーブル
+      // DynamoDB Postsテーブル
       PostsTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
           TableName: '${self:provider.environment.POSTS_TABLE_NAME}',
           AttributeDefinitions: [{ AttributeName: 'postId', AttributeType: 'S' }],
           KeySchema: [{ AttributeName: 'postId', KeyType: 'HASH' }],
+          BillingMode: 'PAY_PER_REQUEST',
+        },
+      },
+      // DynamoDB Commentsテーブル
+      CommentsTable: {
+        Type: 'AWS::DynamoDB::Table',
+        Properties: {
+          TableName: '${self:provider.environment.COMMENTS_TABLE_NAME}',
+          AttributeDefinitions: [
+            { AttributeName: 'postId', AttributeType: 'S' },
+            { AttributeName: 'createdAt', AttributeType: 'S' },
+          ],
+          KeySchema: [
+            { AttributeName: 'postId', KeyType: 'HASH' },
+            { AttributeName: 'createdAt', KeyType: 'RANGE' },
+          ],
           BillingMode: 'PAY_PER_REQUEST',
         },
       },
@@ -89,7 +112,7 @@ const serverlessConfiguration: AWS = {
           },
         },
       },
-      // S3バケットの公開ポリシー（ルール）
+      // S3バケットの公開ポリシー
       PostsS3BucketPolicy: {
         Type: 'AWS::S3::BucketPolicy',
         Properties: {
@@ -108,7 +131,6 @@ const serverlessConfiguration: AWS = {
       },
     },
   },
-  // ^^^^^^^^^^ ここまでが修正箇所 ^^^^^^^^^^
 };
 
 module.exports = serverlessConfiguration;

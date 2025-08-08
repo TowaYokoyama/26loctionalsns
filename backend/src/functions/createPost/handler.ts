@@ -2,9 +2,20 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
 
-const client = new DynamoDBClient({ region: process.env.AWS_REGION });
-const docClient = DynamoDBDocumentClient.from(client);
+// ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
+const dynamoDbClientConfig = process.env.IS_OFFLINE
+  ? {
+      region: 'localhost',
+      endpoint: 'http://localhost:8000',
+      credentials: {
+        accessKeyId: 'MockAccessKeyId',
+        secretAccessKey: 'MockSecretAccessKey',
+      },
+    }
+  : { region: process.env.AWS_REGION };
 
+const client = new DynamoDBClient(dynamoDbClientConfig);
+const docClient = DynamoDBDocumentClient.from(client);
 // API Gatewayからのイベントの型を定義
 interface ApiGatewayEvent {
   body: string;

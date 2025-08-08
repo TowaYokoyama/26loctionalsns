@@ -2,8 +2,22 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-const docClient = DynamoDBDocumentClient.from(dbClient);
+// ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
+const dynamoDbClientConfig = process.env.IS_OFFLINE
+  ? {
+      region: 'localhost',
+      endpoint: 'http://localhost:8000',
+      credentials: {
+        accessKeyId: 'MockAccessKeyId',
+        secretAccessKey: 'MockSecretAccessKey',
+      },
+    }
+  : { region: process.env.AWS_REGION };
+
+const client = new DynamoDBClient(dynamoDbClientConfig);
+const docClient = DynamoDBDocumentClient.from(client);
+
+
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
 export const main = async (event:any) => {
