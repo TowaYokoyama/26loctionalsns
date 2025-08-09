@@ -1,41 +1,24 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
 
-// ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
-const dynamoDbClientConfig = process.env.IS_OFFLINE
-  ? {
-      region: 'localhost',
-      endpoint: 'http://localhost:8000',
-      credentials: {
-        accessKeyId: 'MockAccessKeyId',
-        secretAccessKey: 'MockSecretAccessKey',
-      },
-    }
-  : { region: process.env.AWS_REGION };
+import { randomUUID } from "crypto";
+import { docClient } from "src/libs/dynamodbClient";
 
-const client = new DynamoDBClient(dynamoDbClientConfig);
-const docClient = DynamoDBDocumentClient.from(client);
-export const main = async (event:any) => {
-  const { postId } = event.pathParameters;
-  const { userId, username, text } = JSON.parse(event.body);
-
-  const newComment = {
-    postId,
-    createdAt: new Date().toISOString(),
-    userId,
-    username,
-    text,
-  };
+export const main = async (event: any) => {
+  const data = JSON.parse(event.body);
 
   const command = new PutCommand({
-    TableName: process.env.COMMENTS_TABLE_NAME,
-    Item: newComment,
+    TableName: process.env.POSTS_TABLE_NAME, // 正しくはPOSTS_TABLE_NAME
+    Item: {
+      postId: randomUUID(),
+      caption: data.caption,
+      imageNames: data.imageNames,
+      location: data.location,
+      userId: data.userId, // 投稿者のIDを保存
+      createdAt: new Date().toISOString(),
+    },
   });
 
   await docClient.send(command);
 
-  return {
-    statusCode: 201,
-    body: JSON.stringify(newComment),
-  };
+  return { statusCode: 201, body: JSON.stringify({ message: "Post created successfully" }) };
 };

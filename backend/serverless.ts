@@ -10,6 +10,9 @@ import likePost from '@functions/likePost';
 import createComment from '@functions/createComment';
 import getComments from '@functions/getComments';
 import deleteComment from '@functions/deleteComment';
+import updateUserProfile from '@functions/updateUserProfile';
+import getUserProfile from '@functions/getUserProfile';
+
 
 // コメント用の関数をインポート
 
@@ -40,6 +43,11 @@ const serverlessConfiguration: AWS = {
             Action: ['dynamodb:PutItem', 'dynamodb:Query',  'dynamodb:DeleteItem'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.COMMENTS_TABLE_NAME}',
           },
+          { // ▼▼▼ ユーザーテーブルへの権限を追加 ▼▼▼
+            Effect: 'Allow',
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem'],
+            Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.USERS_TABLE_NAME}',
+          },
         ],
       },
     },
@@ -49,6 +57,7 @@ const serverlessConfiguration: AWS = {
       POSTS_TABLE_NAME: '${self:service}-posts-${sls:stage}',
       POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}',
       COMMENTS_TABLE_NAME: '${self:service}-comments-${sls:stage}',
+       USERS_TABLE_NAME: '${self:service}-users-${sls:stage}',
     },
   },
   functions: {
@@ -61,6 +70,8 @@ const serverlessConfiguration: AWS = {
     createComment,
     getComments, 
     deleteComment,
+    updateUserProfile, 
+    getUserProfile,  
   },
   package: { individually: true },
   resources: {
@@ -75,6 +86,17 @@ const serverlessConfiguration: AWS = {
           BillingMode: 'PAY_PER_REQUEST',
         },
       },
+
+       UsersTable: {
+        Type: 'AWS::DynamoDB::Table',
+        Properties: {
+          TableName: '${self:provider.environment.USERS_TABLE_NAME}',
+          AttributeDefinitions: [{ AttributeName: 'userId', AttributeType: 'S' }],
+          KeySchema: [{ AttributeName: 'userId', KeyType: 'HASH' }],
+          BillingMode: 'PAY_PER_REQUEST',
+        },
+      },
+
       // DynamoDB Commentsテーブル
       CommentsTable: {
         Type: 'AWS::DynamoDB::Table',
