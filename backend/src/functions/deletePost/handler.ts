@@ -1,42 +1,43 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { DeleteCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-
-// ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
-const dynamoDbClientConfig = process.env.IS_OFFLINE
-  ? {
-      region: 'localhost',
-      endpoint: 'http://localhost:8000',
-      credentials: {
-        accessKeyId: 'MockAccessKeyId',
-        secretAccessKey: 'MockSecretAccessKey',
-      },
-    }
-  : { region: process.env.AWS_REGION };
-
-const client = new DynamoDBClient(dynamoDbClientConfig);
-const docClient = DynamoDBDocumentClient.from(client);
+import { docClient } from "src/libs/dynamodbClient";
 
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+// S3クライアントも、ローカル開発環境を考慮して初期化する
+const s3Client = new S3Client(
+  process.env.IS_OFFLINE
+    ? {
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: 'S3RVER',
+          secretAccessKey: 'S3RVER',
+        },
+        endpoint: 'http://localhost:4569', // serverless-s3-localのデフォルトポート
+        region: 'ap-northeast-1',
+      }
+    : {}
+);
 
-export const main = async (event:any) => {
+export const main = async (event: any) => {
   const { postId } = event.pathParameters;
 
-  // 1. まずDynamoDBから投稿情報を取得して、画像ファイル名を得る
+  // 1. DynamoDBから投稿情報を取得して、画像ファイル名（複数）を得る
   const getCommand = new GetCommand({
     TableName: process.env.POSTS_TABLE_NAME,
     Key: { postId },
   });
   const { Item } = await docClient.send(getCommand);
 
-  if (Item && Item.imageName) {
-    // 2. S3から画像ファイルを削除
-    const deleteObjectCommand = new DeleteObjectCommand({
-      Bucket: process.env.POSTS_S3_BUCKET,
-      Key: Item.imageName,
+  if (Item && Item.imageNames && Array.isArray(Item.imageNames)) {
+    // 2. S3から全ての画像ファイルを削除
+    const deletePromises = Item.imageNames.map((imageName: string) => {
+      const deleteObjectCommand = new DeleteObjectCommand({
+        Bucket: process.env.POSTS_S3_BUCKET,
+        Key: imageName,
+      });
+      return s3Client.send(deleteObjectCommand);
     });
-    await s3Client.send(deleteObjectCommand);
+    await Promise.all(deletePromises);
   }
 
   // 3. DynamoDBから投稿情報を削除

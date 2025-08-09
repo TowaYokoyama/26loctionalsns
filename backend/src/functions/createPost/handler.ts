@@ -1,6 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
+import { docClient } from "src/libs/dynamodbClient";
 
 // ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
 const dynamoDbClientConfig = process.env.IS_OFFLINE
@@ -14,8 +15,7 @@ const dynamoDbClientConfig = process.env.IS_OFFLINE
     }
   : { region: process.env.AWS_REGION };
 
-const client = new DynamoDBClient(dynamoDbClientConfig);
-const docClient = DynamoDBDocumentClient.from(client);
+
 // API Gatewayからのイベントの型を定義
 interface ApiGatewayEvent {
   body: string;

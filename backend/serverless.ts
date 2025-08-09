@@ -13,13 +13,10 @@ import deleteComment from '@functions/deleteComment';
 import updateUserProfile from '@functions/updateUserProfile';
 import getUserProfile from '@functions/getUserProfile';
 
-
-// コメント用の関数をインポート
-
 const serverlessConfiguration: AWS = {
   service: 'backend',
   frameworkVersion: '4',
-  plugins: ['serverless-offline'],
+  plugins: ['serverless-offline'], // ← serverless-dynamodb-local を削除
   provider: {
     name: 'aws',
     runtime: 'nodejs18.x',
@@ -40,10 +37,10 @@ const serverlessConfiguration: AWS = {
           },
           { // Commentsテーブルへの権限
             Effect: 'Allow',
-            Action: ['dynamodb:PutItem', 'dynamodb:Query',  'dynamodb:DeleteItem'],
+            Action: ['dynamodb:PutItem', 'dynamodb:Query', 'dynamodb:DeleteItem'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.COMMENTS_TABLE_NAME}',
           },
-          { // ▼▼▼ ユーザーテーブルへの権限を追加 ▼▼▼
+          { // Usersテーブルへの権限
             Effect: 'Allow',
             Action: ['dynamodb:PutItem', 'dynamodb:GetItem'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.USERS_TABLE_NAME}',
@@ -57,7 +54,7 @@ const serverlessConfiguration: AWS = {
       POSTS_TABLE_NAME: '${self:service}-posts-${sls:stage}',
       POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}',
       COMMENTS_TABLE_NAME: '${self:service}-comments-${sls:stage}',
-       USERS_TABLE_NAME: '${self:service}-users-${sls:stage}',
+      USERS_TABLE_NAME: '${self:service}-users-${sls:stage}',
     },
   },
   functions: {
@@ -68,12 +65,15 @@ const serverlessConfiguration: AWS = {
     deletePost,
     likePost,
     createComment,
-    getComments, 
+    getComments,
     deleteComment,
-    updateUserProfile, 
-    getUserProfile,  
+    updateUserProfile,
+    getUserProfile,
   },
   package: { individually: true },
+  
+  // ▼▼▼ custom ブロックを完全に削除しました ▼▼▼
+
   resources: {
     Resources: {
       // DynamoDB Postsテーブル
@@ -86,8 +86,8 @@ const serverlessConfiguration: AWS = {
           BillingMode: 'PAY_PER_REQUEST',
         },
       },
-
-       UsersTable: {
+      // DynamoDB Usersテーブル
+      UsersTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
           TableName: '${self:provider.environment.USERS_TABLE_NAME}',
@@ -96,7 +96,6 @@ const serverlessConfiguration: AWS = {
           BillingMode: 'PAY_PER_REQUEST',
         },
       },
-
       // DynamoDB Commentsテーブル
       CommentsTable: {
         Type: 'AWS::DynamoDB::Table',

@@ -7,13 +7,13 @@ export const main = async (event: any) => {
   const data = JSON.parse(event.body);
 
   const command = new PutCommand({
-    TableName: process.env.POSTS_TABLE_NAME, // 正しくはPOSTS_TABLE_NAME
+    TableName: process.env.POSTS_TABLE_NAME,
     Item: {
       postId: randomUUID(),
       caption: data.caption,
       imageNames: data.imageNames,
       location: data.location,
-      userId: data.userId, // 投稿者のIDを保存
+      userId: data.userId, // ← この行を追加して、投稿者のIDを保存
       createdAt: new Date().toISOString(),
     },
   });

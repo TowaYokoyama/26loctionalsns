@@ -1,5 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { docClient } from "src/libs/dynamodbClient";
 
 // ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
 const dynamoDbClientConfig = process.env.IS_OFFLINE
@@ -13,8 +14,7 @@ const dynamoDbClientConfig = process.env.IS_OFFLINE
     }
   : { region: process.env.AWS_REGION };
 
-const client = new DynamoDBClient(dynamoDbClientConfig);
-const docClient = DynamoDBDocumentClient.from(client);
+
 
 
 export const main = async (event: any) => {
