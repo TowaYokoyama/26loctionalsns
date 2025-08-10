@@ -1,6 +1,6 @@
 import type { AWS } from '@serverless/typescript';
 
-// 作成した関数をインポート
+// 作成した全ての関数をインポート
 import hello from '@functions/hello';
 import createPost from '@functions/createPost';
 import getUploadUrl from '@functions/getUploadUrl';
@@ -16,7 +16,10 @@ import getUserProfile from '@functions/getUserProfile';
 const serverlessConfiguration: AWS = {
   service: 'backend',
   frameworkVersion: '4',
-  plugins: ['serverless-offline'], // ← serverless-dynamodb-local を削除
+  plugins: [
+    'serverless-offline',
+    //'serverless-dynamodb-local' // プラグインを再度有効化
+  ],
   provider: {
     name: 'aws',
     runtime: 'nodejs18.x',
@@ -42,7 +45,7 @@ const serverlessConfiguration: AWS = {
           },
           { // Usersテーブルへの権限
             Effect: 'Allow',
-            Action: ['dynamodb:PutItem', 'dynamodb:GetItem'],
+            Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:UpdateItem'],
             Resource: 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:provider.environment.USERS_TABLE_NAME}',
           },
         ],
@@ -72,8 +75,18 @@ const serverlessConfiguration: AWS = {
   },
   package: { individually: true },
   
-  // ▼▼▼ custom ブロックを完全に削除しました ▼▼▼
-
+  // ▼▼▼ このcustomブロックが、APIとDBを自動で連携させる鍵です ▼▼▼
+  /*custom: {
+    dynamodb: {
+      stages: ['dev'],
+      start: {
+        port: 8000,
+        inMemory: true, // メモリ上で高速に動作
+        migrate: true,  // 起動時にresourcesで定義したテーブルを自動作成する
+      },
+    },
+*/
+  
   resources: {
     Resources: {
       // DynamoDB Postsテーブル
@@ -118,15 +131,12 @@ const serverlessConfiguration: AWS = {
         Properties: {
           BucketName: '${self:provider.environment.POSTS_S3_BUCKET}',
           PublicAccessBlockConfiguration: {
-            BlockPublicAcls: false,
-            BlockPublicPolicy: false,
-            IgnorePublicAcls: false,
-            RestrictPublicBuckets: false,
+            BlockPublicAcls: false, BlockPublicPolicy: false,
+            IgnorePublicAcls: false, RestrictPublicBuckets: false,
           },
           CorsConfiguration: {
             CorsRules: [{
-              AllowedOrigins: ['*'],
-              AllowedHeaders: ['*'],
+              AllowedOrigins: ['*'], AllowedHeaders: ['*'],
               AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
               MaxAge: 3000,
             }],
@@ -139,14 +149,10 @@ const serverlessConfiguration: AWS = {
         Properties: {
           Bucket: { Ref: 'PostsS3Bucket' },
           PolicyDocument: {
-            Statement: [
-              {
-                Effect: 'Allow',
-                Principal: '*',
-                Action: ['s3:GetObject'],
+            Statement: [{
+                Effect: 'Allow', Principal: '*', Action: ['s3:GetObject'],
                 Resource: 'arn:aws:s3:::${self:provider.environment.POSTS_S3_BUCKET}/*',
-              },
-            ],
+            }],
           },
         },
       },

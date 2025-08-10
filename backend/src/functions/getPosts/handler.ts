@@ -1,54 +1,34 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "src/libs/dynamodbClient";
 
-
-// ローカル開発環境(IS_OFFLINE=true)の場合のみ、DockerのDBに接続する設定
-const dynamoDbClientConfig = process.env.IS_OFFLINE
-  ? {
-      region: 'localhost',
-      endpoint: 'http://localhost:8000',
-      credentials: {
-        accessKeyId: 'MockAccessKeyId',
-        secretAccessKey: 'MockSecretAccessKey',
-      },
-    }
-  : { region: process.env.AWS_REGION };
-
-
-
+// S3 URLを組み立てるヘルパー関数
+const getS3ImageUrl = (imageName?: string | null): string => {
+  if (!imageName) return 'https://placehold.jp/150x150.png';
+  const bucketName = process.env.POSTS_S3_BUCKET;
+  const region = process.env.AWS_REGION;
+  return `https://${bucketName}.s3.${region}.amazonaws.com/${imageName}`;
+};
 
 export const main = async (event: any) => {
   const userId = event.queryStringParameters?.userId;
-
-  const command = new ScanCommand({
-    TableName: process.env.POSTS_TABLE_NAME,
-  });
-
+  const command = new ScanCommand({ TableName: process.env.POSTS_TABLE_NAME });
   const result = await docClient.send(command);
   const posts: Record<string, any>[] = result.Items || [];
-
-  const bucketName = process.env.POSTS_S3_BUCKET;
-  const region = process.env.AWS_REGION;
   
   const postsWithDetails = posts.map(post => {
-    const likedByArray = post.likedBy ? Array.from(post.likedBy) : [];
-    
+    const likedBySet = post.likedBy || new Set();
     return {
       ...post,
-      // imageNames配列から、複数のimageUrlを生成する
-      imageUrls: (post.imageNames && Array.isArray(post.imageNames))
-        ? post.imageNames.map((imageName: string) => // ← ここで型を string と指定
-            `https://${bucketName}.s3.${region}.amazonaws.com/${imageName}`
-          )
-        : [],
-      likes: likedByArray.length,
-      isLikedByCurrentUser: userId ? likedByArray.includes(userId) : false,
+      // ▼▼▼ 投稿に保存されたユーザー情報を元に、表示用のURLなどを組み立てる ▼▼▼
+      username: post.authorUsername || post.userId,
+      userAvatarUrl: getS3ImageUrl(post.authorAvatar),
+      imageUrls: (post.imageNames || []).map((imageName: string) => 
+        getS3ImageUrl(imageName) // ヘルパーを使うように変更
+      ),
+      likes: likedBySet.size,
+      isLikedByCurrentUser: userId ? likedBySet.has(userId) : false,
     };
   });
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(postsWithDetails),
-  };
+  return { statusCode: 200, body: JSON.stringify(postsWithDetails) };
 };

@@ -1,6 +1,6 @@
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "src/libs/dynamodbClient";
-
+ 
 
 export const main = async (event: any) => {
   const { postId } = event.pathParameters;

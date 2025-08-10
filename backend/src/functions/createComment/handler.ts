@@ -1,24 +1,28 @@
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
-
-import { randomUUID } from "crypto";
 import { docClient } from "src/libs/dynamodbClient";
 
+
 export const main = async (event: any) => {
-  const data = JSON.parse(event.body);
+  const { postId } = event.pathParameters;
+  const { userId, username, text } = JSON.parse(event.body);
+
+  const newComment = {
+    postId,
+    createdAt: new Date().toISOString(),
+    userId,
+    username,
+    text,
+  };
 
   const command = new PutCommand({
-    TableName: process.env.POSTS_TABLE_NAME,
-    Item: {
-      postId: randomUUID(),
-      caption: data.caption,
-      imageNames: data.imageNames,
-      location: data.location,
-      userId: data.userId, // ← この行を追加して、投稿者のIDを保存
-      createdAt: new Date().toISOString(),
-    },
+    TableName: process.env.COMMENTS_TABLE_NAME, // ← 正しいテーブル名
+    Item: newComment,
   });
 
   await docClient.send(command);
 
-  return { statusCode: 201, body: JSON.stringify({ message: "Post created successfully" }) };
+  return {
+    statusCode: 201,
+    body: JSON.stringify(newComment),
+  };
 };
