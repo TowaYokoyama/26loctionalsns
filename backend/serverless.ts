@@ -94,11 +94,23 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
           TableName: '${self:provider.environment.POSTS_TABLE_NAME}',
-          AttributeDefinitions: [{ AttributeName: 'postId', AttributeType: 'S' }],
+         AttributeDefinitions: [
+      { AttributeName: 'postId', AttributeType: 'S' },
+      { AttributeName: 'category', AttributeType: 'S' }, // GSI用の属性を追加
+    ],
           KeySchema: [{ AttributeName: 'postId', KeyType: 'HASH' }],
           BillingMode: 'PAY_PER_REQUEST',
+           GlobalSecondaryIndexes: [
+      {
+        IndexName: 'CategoryIndex',
+        KeySchema: [{ AttributeName: 'category', KeyType: 'HASH' }],
+        Projection: {
+          ProjectionType: 'ALL', // 検索結果に全ての属性を含める
         },
       },
+    ],
+    },
+  },
       // DynamoDB Usersテーブル
       UsersTable: {
         Type: 'AWS::DynamoDB::Table',

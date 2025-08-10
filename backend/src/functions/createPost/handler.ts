@@ -11,10 +11,10 @@ export const main = async (event: any) => {
     Item: {
       postId: randomUUID(),
       caption: data.caption,
+      category:data.category,
       imageNames: data.imageNames,
       location: data.location,
       userId: data.userId,
-      // ▼▼▼ 投稿した瞬間のユーザー情報を追加 ▼▼▼
       authorUsername: data.authorUsername,
       authorAvatar: data.authorAvatar,
       createdAt: new Date().toISOString(),
