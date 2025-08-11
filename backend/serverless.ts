@@ -12,6 +12,7 @@ import getComments from '@functions/getComments';
 import deleteComment from '@functions/deleteComment';
 import updateUserProfile from '@functions/updateUserProfile';
 import getUserProfile from '@functions/getUserProfile';
+import getPost from '@functions/getPost';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
@@ -72,6 +73,7 @@ const serverlessConfiguration: AWS = {
     deleteComment,
     updateUserProfile,
     getUserProfile,
+    getPost,
   },
   package: { individually: true },
   
