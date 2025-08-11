@@ -13,12 +13,15 @@ import deleteComment from '@functions/deleteComment';
 import updateUserProfile from '@functions/updateUserProfile';
 import getUserProfile from '@functions/getUserProfile';
 import getPost from '@functions/getPost';
+import generateDescription from '@functions/generateDescription';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
   frameworkVersion: '4',
+  useDotenv: true,
   plugins: [
     'serverless-offline',
+    //'serverless-dotenv-plugin',
     //'serverless-dynamodb-local' // プラグインを再度有効化
   ],
   provider: {
@@ -59,6 +62,7 @@ const serverlessConfiguration: AWS = {
       POSTS_S3_BUCKET: '${self:service}-posts-images-${sls:stage}',
       COMMENTS_TABLE_NAME: '${self:service}-comments-${sls:stage}',
       USERS_TABLE_NAME: '${self:service}-users-${sls:stage}',
+      GEMINI_API_KEY: '${env:GEMINI_API_KEY}'
     },
   },
   functions: {
@@ -74,6 +78,7 @@ const serverlessConfiguration: AWS = {
     updateUserProfile,
     getUserProfile,
     getPost,
+    generateDescription,
   },
   package: { individually: true },
   
