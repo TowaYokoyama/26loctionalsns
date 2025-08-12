@@ -26,7 +26,7 @@ export const main = async (event:any) => {
   // ▲▲▲ ここまで追加 ▲▲▲
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+    const model =  genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
     const { image, mimeType } = JSON.parse(event.body);
     
     const prompt = `この画像について、SNS投稿用の短いキャプションと、最も関連性の高いカテゴリを一つ提案してください。形式は以下のJSONフォーマットで回答してください: {"caption": "提案するキャプション", "category": "提案するカテゴリ"}`;
