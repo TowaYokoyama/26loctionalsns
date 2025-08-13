@@ -14,6 +14,7 @@ import updateUserProfile from '@functions/updateUserProfile';
 import getUserProfile from '@functions/getUserProfile';
 import getPost from '@functions/getPost';
 import generateDescription from '@functions/generateDescription';
+import renameCategory from '@functions/renameCategory';
 
 const serverlessConfiguration: AWS = {
   service: 'backend',
@@ -79,6 +80,7 @@ const serverlessConfiguration: AWS = {
     getUserProfile,
     getPost,
     generateDescription,
+    renameCategory,
   },
   package: { individually: true },
   
